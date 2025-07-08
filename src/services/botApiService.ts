@@ -148,31 +148,10 @@ export class BotApiService {
   }
 
   /**
-   * Test the API connection
-   */
-  async testConnection(): Promise<ApiResponse> {
-    return this.makeRequest('/bot/settings', { test: true });
-  }
-
-  /**
-   * Get bot settings
-   */
-  async getBotSettings(key?: string, value?: string): Promise<ApiResponse> {
-    return this.makeRequest('/bot/settings', { key, value: value || null });
-  }
-
-  /**
    * Update bot settings
    */
   async updateBotSettings(key: string, value: string): Promise<ApiResponse> {
     return this.makeRequest('/bot/settings', { key, value });
-  }
-
-  /**
-   * Delete bot setting
-   */
-  async deleteBotSetting(key: string): Promise<ApiResponse> {
-    return this.makeRequest('/bot/settings', { key, value: null });
   }
 }
 

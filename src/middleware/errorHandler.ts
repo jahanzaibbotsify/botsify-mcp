@@ -111,5 +111,4 @@ export class ErrorHandler {
   };
 }
 
-// Export singleton instance
 export const errorHandler = new ErrorHandler(); 
