@@ -14,7 +14,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+// Session store with metadata
+interface SessionRecord {
+    sessionId: string;
+    createdAt: number;
+    updatedAt: number;
+    deleteRequested: boolean;
+    transport: StreamableHTTPServerTransport;
+}
+
+const sessions: { [sessionId: string]: SessionRecord } = {};
+
+// Cleanup function to remove old sessions
+function cleanupOldSessions() {
+    const now = Date.now();
+    const tenMinutes = 10 * 60 * 1000;
+    for (const sessionId in sessions) {
+        const session = sessions[sessionId];
+        if (session && session.updatedAt < now - tenMinutes) {
+            delete sessions[sessionId];
+        }
+    }
+}
+setInterval(cleanupOldSessions, 60 * 1000); // Run every minute
 
 const server = new McpServer({
     name: "botsify-mcp-server",
@@ -76,16 +98,25 @@ server.registerTool(
 );
 
 async function getOrCreateTransport(sessionId: string | undefined) {
-    if (sessionId && transports[sessionId]) return transports[sessionId];
+    if (sessionId && sessions[sessionId]) {
+        sessions[sessionId].updatedAt = Date.now();
+        return sessions[sessionId].transport;
+    }
     const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (id) => {
-            transports[id] = transport;
+            sessions[id] = {
+                sessionId: id,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                deleteRequested: false,
+                transport,
+            };
             console.log("Session initialized:", id);
         }
     });
     transport.onclose = () => {
-        if (transport.sessionId) delete transports[transport.sessionId];
+        if (transport.sessionId) delete sessions[transport.sessionId];
     };
     await server.connect(transport);
     return transport;
@@ -94,10 +125,16 @@ async function getOrCreateTransport(sessionId: string | undefined) {
 app.post("/mcp", async (req, res) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     let transport: StreamableHTTPServerTransport;
-    if (sessionId && transports[sessionId]) {
-        transport = transports[sessionId];
+    if (sessionId && sessions[sessionId]) {
+        sessions[sessionId].updatedAt = Date.now();
+        transport = sessions[sessionId].transport;
     } else if (!sessionId && isInitializeRequest(req.body)) {
-        transport = await getOrCreateTransport(undefined);
+        try {
+            transport = await getOrCreateTransport(undefined);
+        } catch (error) {
+            res.status(500).json({ error: "Failed to create transport" });
+            return;
+        }
     } else {
         res.status(400).json({
             jsonrpc: "2.0",
@@ -109,20 +146,45 @@ app.post("/mcp", async (req, res) => {
         });
         return;
     }
-    await transport.handleRequest(req, res, req.body);
+    try {
+        await transport.handleRequest(req, res, req.body);
+        if (sessionId && sessions[sessionId]) {
+            sessions[sessionId].updatedAt = Date.now();
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Failed to handle request" });
+    }
 });
 
 const handleSessionRequest = async (req: express.Request, res: express.Response) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
-    if (!sessionId || !transports[sessionId]) {
+    if (!sessionId || !sessions[sessionId]) {
         res.status(400).send("Invalid or missing session ID");
         return;
     }
-    const transport = transports[sessionId];
-    await transport.handleRequest(req, res);
+    const session = sessions[sessionId];
+    session.updatedAt = Date.now();
+    try {
+        await session.transport.handleRequest(req, res);
+        session.updatedAt = Date.now();
+    } catch (error) {
+        res.status(500).json({ error: "Failed to handle session request" });
+    }
 };
+
 app.get("/mcp", handleSessionRequest);
-app.delete("/mcp", handleSessionRequest);
+
+app.delete("/mcp", async (req, res) => {
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+    if (sessionId && sessions[sessionId]) {
+        sessions[sessionId].deleteRequested = true;
+        sessions[sessionId].updatedAt = Date.now();
+        // delete sessions[sessionId];
+        res.status(200).send("Session deleted");
+    } else {
+        res.status(400).send("Invalid session ID");
+    }
+});
 
 app.get('/', (req, res) => {
     res.json({
