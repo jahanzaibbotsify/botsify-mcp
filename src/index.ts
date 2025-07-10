@@ -9,10 +9,12 @@ import {isInitializeRequest} from "@modelcontextprotocol/sdk/types.js";
 import {z} from "zod";
 import {botSettingKeys, botSettingsTools} from "./tools/botSettingsTools.js";
 import { toolsController } from "./controllers/toolsController.js";
+import {requestContextMiddleware, setValue} from "./utils/requestContext";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(requestContextMiddleware)
 
 // Session store with metadata
 interface SessionRecord {
@@ -50,9 +52,12 @@ server.registerTool(
         inputSchema: {
             key: z.string(),
             value: z.string(),
+            botsifyChatBotApiKey: z.string(),
         }
     },
-    async ({key, value}: { key: string; value: string }) => {
+    async ({key, value, botsifyChatBotApiKey}: { key: string; value: string, botsifyChatBotApiKey: string }) => {
+        // console.log(`Updating bot settings for key: ${key}, value: ${value}, bot ID: ${botsifyChatBotApiKey}`);
+        setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
         const result = await botSettingsTools.updateBotSettings({key, value});
         return {
             content: [

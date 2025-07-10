@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { BotApiConfig, ApiResponse, ApiError } from '../types/index.js';
 import { getBotApiConfig } from '../config/index.js';
 import { Logger } from '../utils/logger.js';
+import {getValue} from "../utils/requestContext";
 
 export class BotApiService {
   private client: AxiosInstance;
@@ -57,7 +58,7 @@ export class BotApiService {
    */
   async makeRequest<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     try {
-      const requestData = { ...data, apikey: this.config.apikey };
+      const requestData = { ...data, apikey: getValue('botsifyChatBotApiKey') };
       
       this.logger.info(`Making API request to ${endpoint}`, {
         endpoint,

@@ -6,7 +6,6 @@ const EnvironmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   BOTSIFY_API_BASE_URL: z.string().url().default('https://dev.botsify.com/api'),
   BOTSIFY_API_KEY: z.string().min(1),
-  BOTSIFY_BOT_ID: z.string().min(1),
   PORT: z.string().transform(Number).pipe(z.number().min(1).max(65535)).default('3000'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
 });
@@ -31,7 +30,6 @@ export const getBotApiConfig = (): BotApiConfig => {
   return {
     baseUrl: env.BOTSIFY_API_BASE_URL,
     authKey: env.BOTSIFY_API_KEY,
-    apikey: env.BOTSIFY_BOT_ID,
     timeout: 60000,
   };
 };
