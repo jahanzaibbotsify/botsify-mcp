@@ -1,10 +1,14 @@
 import {z} from 'zod';
 import {ValidationError} from '../types/index.js';
-import {botApiService} from '../services/botApiService.js';
 import {Logger} from '../utils/logger.js';
 import {UpdateBotSettingsSchema} from '../types/index.js';
+import {apiRequest} from "../services/apiRequestService";
+import {setValue} from "../utils/requestContext";
+import type {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 
-// Bot setting keys (from user)
+/**
+ * List of valid advance bot setting keys.
+ */
 export const botSettingKeys: string[] = [
     "website-chatbot-primary-color",
     "website-chatbot-secondary-color",
@@ -124,7 +128,12 @@ export class BotSettingsTools {
         try {
             const validatedArgs = UpdateBotSettingsSchema.parse(args);
             this.logger.info('Updating bot settings', {key: validatedArgs.key});
-            const result = await botApiService.updateBotSettings(validatedArgs.key, validatedArgs.value);
+            const result = await apiRequest('POST', '/bot/settings', {
+                data: {
+                    key: validatedArgs.key,
+                    value: validatedArgs.value
+                }
+            })
             if (result.success) {
                 return {
                     success: true,
@@ -146,47 +155,141 @@ export class BotSettingsTools {
             throw error;
         }
     }
-
-    /**
-     * Extracts the key from the instruction using a language model.
-     */
-    getKeyFromLLM = async (server: any, instruction: string) => {
-        this.logger.info('Extracting key from instruction using LLM');
-        const prompt = `
-          You are an assistant that helps map user requests to specific bot setting keys.
-          
-          Valid setting keys:
-          ${botSettingKeys.map(k => `- ${k}`).join("\n")}
-          
-          A user said: "${instruction}"
-          
-          From the keys above, which exact key is the one the user wants to update? 
-          Return EXACTLY the matching key as it appears above, or "NONE" if none apply.
-          `;
-        const resp = await server.createMessage({
-            messages: [
-                {
-                    role: "system",
-                    content: {type: "text", text: "Always answer with an exact key from the provided list or NONE."}
-                },
-                {role: "user", content: {type: "text", text: prompt}}
-            ],
-            maxTokens: 10
-        });
-        this.logger.info(resp.content.text.trim());
-        return resp.content.text.trim();
-    }
-
-    /**
-     * Extracts the value from the instruction.
-     */
-    extractValue = (instruction: string) => {
-        const match = instruction.match(/to ['"]?(.+?)['"]?(?:\.|$)/i);
-        if (match && match[1]) return match[1].trim();
-        const match2 = instruction.match(/(?:as|is) ['"]?(.+?)['"]?(?:\.|$)/i);
-        if (match2 && match2[1]) return match2[1].trim();
-        return instruction.split(" ").slice(-1)[0];
-    }
 }
 
-export const botSettingsTools = new BotSettingsTools(); 
+export const botSettingsTools = new BotSettingsTools();
+
+export function registerBotSettingsTools(server: McpServer) {
+    /**
+     * Register the tool to update bot settings dynamically.
+     * This tool allows clients to update bot branding and advanced settings
+     */
+    server.registerTool(
+        "updateBotSettings",
+        {
+            description: `This tool allows clients to update the bot’s configuration settings dynamically by specifying a valid key and its corresponding value. To ensure proper functionality, the key must match one of the accepted bot setting keys. Valid keys include: ${botSettingKeys.join(", ")}.`,
+            inputSchema: {
+                key: z.string(),
+                value: z.string(),
+                botsifyChatBotApiKey: z.string(),
+            }
+        },
+        async ({key, value, botsifyChatBotApiKey}: { key: string; value: string, botsifyChatBotApiKey: string }) => {
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+            const result = await botSettingsTools.updateBotSettings({key, value});
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: result.message + (result.data ? `\n${JSON.stringify(result.data)}` : ""),
+                    },
+                ],
+            };
+        }
+    );
+
+    /**
+     * Register the tool to update general bot settings.
+     */
+    server.registerTool(
+        "updateBotGeneralSettings",
+        {
+            description: `
+              This tool allows clients to update the bot's general configuration settings.
+              You may update one or more of the following settings:
+              - update just those fields that user told.  
+              - botStatus (boolean): Set to \`true\` to activate the bot or \`false\` to deactivate it.
+              - email (string): Comma-separated list of email addresses to receive transcriptions and notifications (e.g. "foo@example.com,bar@example.com").
+              - inactiveUrl (string): URL to be called via webhook when the bot becomes inactive.
+              - translation (boolean): Enable (\`true\`) or disable (\`false\`) translation of messages.
+              - botsifyChatBotApiKey (string, required): Your Botsify ChatBot API Key. This is required for authentication.
+        
+              You may update any subset of these fields in a single request. If a field is omitted, it will remain unchanged.
+            `,
+            inputSchema: {
+                botStatus: z.boolean().optional(),
+                email: z.string().optional(),
+                inactiveUrl: z.string().optional(),
+                translation: z.boolean().optional(),
+                botsifyChatBotApiKey: z.string(),
+            }
+        },
+        async (args: {
+            botStatus?: boolean | undefined;
+            email?: string | undefined;
+            inactiveUrl?: string | undefined;
+            messageWebhook?: string | undefined;
+            translation?: boolean | undefined;
+            botsifyChatBotApiKey: string
+        }) => {
+            const {botStatus, email, inactiveUrl, messageWebhook, translation, botsifyChatBotApiKey} = args;
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+
+            // Create a validated object with only the provided values
+            const validatedObject: Record<string, any> = {};
+
+            if (botStatus !== undefined) {
+                validatedObject.botStatus = botStatus ? 1 : 0;
+            }
+            if (email !== undefined) {
+                validatedObject.email = email;
+            }
+            if (inactiveUrl !== undefined) {
+                validatedObject.inactiveUrl = inactiveUrl;
+            }
+            if (messageWebhook !== undefined) {
+                validatedObject.messageWebhook = messageWebhook;
+            }
+            if (translation !== undefined) {
+                validatedObject.translation = translation ? 1 : 0;
+            }
+
+            const result = await apiRequest('POST', '/v1/bot/settings/update', {
+                data: validatedObject
+            });
+
+            if (result.success) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `General bot settings updated successfully. Updated fields: ${Object.keys(validatedObject).join(', ')}`,
+                        },
+                    ],
+                };
+            } else {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Failed to update general bot settings: ${result.error}`,
+                        },
+                    ],
+                };
+            }
+        }
+    );
+
+    /**
+     * Register the tool to retrieve the Botsify ChatBot API key.
+     */
+    server.registerTool(
+        "getBotsifyChatBotApiKey",
+        {
+            description: `Retrieves the currently configured Botsify ChatBot API key from the request context. This API key is required to authenticate and authorize communication between your application and the Botsify ChatBot platform. Handle this key securely and never expose it in client-side or public channels.`,
+            inputSchema: {
+                botsifyChatBotApiKey: z.string(),
+            }
+        },
+        async ({botsifyChatBotApiKey}: { botsifyChatBotApiKey: string }) => {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Your Botsify ChatBot API Key is ${botsifyChatBotApiKey}`,
+                    },
+                ],
+            };
+        }
+    );
+}
