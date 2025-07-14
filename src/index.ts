@@ -91,8 +91,22 @@ app.get('/', (req, res) => {
         version: "1.0.0",
         capabilities: {
             tools: [
-                "update-bot-settings",
-                "respond"
+                // botSettingsTools
+                "updateBotSettings",
+                "updateBotGeneralSettings",
+                "getBotsifyChatBotApiKey",
+                // manageTeamTools
+                "getTeamMembers",
+                "toggleBotAccessForTeamMember",
+                "resendInvitationToTeamMember",
+                "toggleBotNotificationForTeamMember",
+                "getTeamMember",
+                "createTeamMember",
+                "updateTeamMember",
+                "deleteTeamMember",
+                // manageOfflineHoursTools
+                "getOfflineHours",
+                "setOfflineHours"
             ]
         }
     });
