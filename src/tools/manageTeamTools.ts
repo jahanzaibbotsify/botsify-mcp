@@ -1,7 +1,7 @@
 import type {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
-import {setValue} from "../utils/requestContext";
-import {apiRequest} from "../services/apiRequestService";
+import {setValue} from "../utils/requestContext.js";
+import {apiRequest} from "../services/apiRequestService.js";
 
 export function registerManageTeamTools(server: McpServer) {
     /**

@@ -2,8 +2,8 @@ import {z} from 'zod';
 import {ValidationError} from '../types/index.js';
 import {Logger} from '../utils/logger.js';
 import {UpdateBotSettingsSchema} from '../types/index.js';
-import {apiRequest} from "../services/apiRequestService";
-import {setValue} from "../utils/requestContext";
+import {apiRequest} from "../services/apiRequestService.js";
+import {setValue} from "../utils/requestContext.js";
 import type {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 
 /**

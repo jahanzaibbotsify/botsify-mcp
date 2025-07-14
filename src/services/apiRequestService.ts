@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, Method } from 'axios';
 import { getBotApiConfig } from '../config/index.js';
 import { Logger } from '../utils/logger.js';
-import { getValue } from '../utils/requestContext';
+import { getValue } from '../utils/requestContext.js';
 
 const config = getBotApiConfig();
 const logger = new Logger({ service: 'BotApiService' });
@@ -100,7 +100,6 @@ export async function apiRequest<T = any>(
     } else if (method.toUpperCase() === 'GET') {
       params = { ...options.params, apikey: getValue('botsifyChatBotApiKey') };
     }
-    console.log('Payload', payload)
 
     const axiosConfig: AxiosRequestConfig = {
       url: endpoint,

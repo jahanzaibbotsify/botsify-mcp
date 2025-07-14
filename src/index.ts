@@ -3,7 +3,7 @@ import express from "express";
 import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {StreamableHTTPServerTransport} from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {toolsController} from "./controllers/toolsController.js";
-import {requestContextMiddleware, setValue} from "./utils/requestContext";
+import {requestContextMiddleware, setValue} from "./utils/requestContext.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerAllTools } from "./tools/registry.js";
 
