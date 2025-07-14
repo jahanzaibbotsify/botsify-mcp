@@ -59,4 +59,411 @@ export function registerManageTeamTools(server: McpServer) {
             }
         }
     );
+
+    /**
+     * Lookup a team member by userId or email
+     * @param userId
+     * @param email
+     */
+    async function lookupTeamMember(userId?: string, email?: string): Promise<any | null> {
+        const memberId = userId || email;
+        if (!memberId) return null;
+        const memberResponse = await apiRequest<any>('GET', `/v1/bot/team/${memberId}`);
+        return memberResponse?.data?.member || null;
+    }
+
+    /**
+     * Response helpers
+     */
+    function missingIdResponse() {
+        return {
+            content: [
+                { type: "text", text: "Please provide either a userId or an email to identify the team member." },
+            ],
+        } as any;
+    }
+
+    /**
+     * Response when no team member is found
+     * @param userId
+     * @param email
+     */
+    function notFoundResponse(userId?: string, email?: string) {
+        return {
+            content: [
+                { type: "text", text: `No team member found with ${userId ? `userId: ${userId}` : `email: ${email}`}` },
+            ],
+        } as any;
+    }
+
+    /**
+     * Response for errors
+     * @param action
+     * @param error
+     */
+    function errorResponse(action: string, error: unknown) {
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Error ${action}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                },
+            ],
+        } as any;
+    }
+
+    /**
+     * Confirmation response for actions
+     * @param member
+     * @param actionText
+     */
+    function confirmationResponse(member: any, actionText: string) {
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Found member:\n${JSON.stringify(member, null, 2)}\n\n${actionText}`,
+                },
+            ],
+        } as any;
+    }
+
+    /**
+     * Change bot access for a team member
+     */
+    server.registerTool(
+        "toggleBotAccessForTeamMember",
+        {
+            description: `Finds a team member by user ID or email, then asks for your confirmation before changing their bot access. You must confirm to proceed with changing access.`,
+            inputSchema: {
+                userId: z.string().optional(),
+                email: z.string().optional(),
+                botsifyChatBotApiKey: z.string(),
+                confirm: z.boolean().default(false)
+            }
+        },
+        async (args: { userId?: string | undefined; email?: string | undefined; botsifyChatBotApiKey: string; confirm?: boolean | undefined }) => {
+            const { userId, email, botsifyChatBotApiKey, confirm } = args;
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+
+            try {
+                if (!userId && !email) return missingIdResponse();
+                const member = await lookupTeamMember(userId, email);
+                if (!member || !member.id) return notFoundResponse(userId, email);
+                if (!confirm) {
+                    return confirmationResponse(member, 'Do you want to change bot access for this user? Please respond with "confirm: true" to proceed.');
+                }
+                const result = await apiRequest<any>('GET', `/v1/bot/team/${member.id}/change-access`);
+                if (result.success) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: result.data ? `Bot access changed successfully:\n${JSON.stringify(result.data, null, 2)}` : "Bot access change action completed, but no data returned.",
+                            },
+                        ],
+                    };
+                } else {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `Failed to change bot access: ${result.error}`,
+                            },
+                        ],
+                    };
+                }
+            } catch (error) {
+                return errorResponse('processing request', error);
+            }
+        }
+    );
+
+    /**
+     * Resend invitation to a team member
+     */
+    server.registerTool(
+        "resendInvitationToTeamMember",
+        {
+            description: `Finds a team member by user ID or email, then asks for your confirmation before resending their invitation. You must confirm to proceed with resending the invitation.`,
+            inputSchema: {
+                userId: z.string().optional(),
+                email: z.string().optional(),
+                botsifyChatBotApiKey: z.string(),
+                confirm: z.boolean().default(false)
+            }
+        },
+        async (args: { userId?: string | undefined; email?: string | undefined; botsifyChatBotApiKey: string; confirm?: boolean | undefined }) => {
+            const { userId, email, botsifyChatBotApiKey, confirm } = args;
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+            try {
+                if (!userId && !email) return missingIdResponse();
+                const member = await lookupTeamMember(userId, email);
+                if (!member || !member.id) return notFoundResponse(userId, email);
+                if (!confirm) {
+                    return confirmationResponse(member, 'Do you want to resend the invitation to this user? Please respond with "confirm: true" to proceed.');
+                }
+                const result = await apiRequest<any>('POST', `/v1/bot/team/resend-invitation/${member.id}`);
+                if (result.success) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: result.data ? `Invitation resent successfully:\n${JSON.stringify(result.data, null, 2)}` : "Invitation resend action completed, but no data returned.",
+                            },
+                        ],
+                    };
+                } else {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `Failed to resend invitation: ${result.error}`,
+                            },
+                        ],
+                    };
+                }
+            } catch (error) {
+                return errorResponse('processing request', error);
+            }
+        }
+    );
+
+    /**
+     * Toggle bot notification for a team member
+     */
+    server.registerTool(
+        "toggleBotNotificationForTeamMember",
+        {
+            description: `Finds a team member by user ID or email, then asks for your confirmation before toggling their bot email notification. You must confirm to proceed with toggling notification.`,
+            inputSchema: {
+                userId: z.string().optional(),
+                email: z.string().optional(),
+                notify: z.boolean(),
+                botsifyChatBotApiKey: z.string(),
+                confirm: z.boolean().default(false)
+            }
+        },
+        async (args: { userId?: string | undefined; email?: string | undefined; notify: boolean; botsifyChatBotApiKey: string; confirm?: boolean | undefined }) => {
+            const { userId, email, notify, botsifyChatBotApiKey, confirm } = args;
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+            try {
+                if (!userId && !email) return missingIdResponse();
+                const member = await lookupTeamMember(userId, email);
+                if (!member || !member.id) return notFoundResponse(userId, email);
+                if (!confirm) {
+                    return confirmationResponse(member, `Do you want to ${notify ? 'enable' : 'disable'} email notifications for this user? Please respond with \"confirm: true\" to proceed.`);
+                }
+                const result = await apiRequest<any>('POST', `/v1/bot/team/email-notification/${notify ? 1 : 0}/${member.id}`);
+                if (result.success) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: result.data ? `Notification toggled successfully:\n${JSON.stringify(result.data, null, 2)}` : "Notification toggle action completed, but no data returned.",
+                            },
+                        ],
+                    };
+                } else {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `Failed to toggle notification: ${result.error}`,
+                            },
+                        ],
+                    };
+                }
+            } catch (error) {
+                return errorResponse('processing request', error);
+            }
+        }
+    );
+
+    /**
+     * Get a team member by userId or email
+     */
+    server.registerTool(
+        "getTeamMember",
+        {
+            description: `Get a team member by user ID or email. Returns the member's details if found.`,
+            inputSchema: {
+                userId: z.string().optional(),
+                email: z.string().optional(),
+                botsifyChatBotApiKey: z.string(),
+            }
+        },
+        async (args: { userId?: string | undefined; email?: string | undefined; botsifyChatBotApiKey: string }) => {
+            const { userId, email, botsifyChatBotApiKey } = args;
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+            try {
+                if (!userId && !email) return missingIdResponse();
+                const member = await lookupTeamMember(userId, email);
+                if (!member || !member.id) return notFoundResponse(userId, email);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Team member found:\n${JSON.stringify(member, null, 2)}`,
+                        },
+                    ],
+                };
+            } catch (error) {
+                return errorResponse('retrieving team member', error);
+            }
+        }
+    );
+
+    /**
+     * Create a new team member
+     */
+    server.registerTool(
+        "createTeamMember",
+        {
+            description: `Create a new team member by specifying name, email, agent type (0: editor, 1: admin, 2: Live Chat Agent), and your Botsify ChatBot API key.`,
+            inputSchema: {
+                name: z.string(),
+                email: z.string().email(),
+                agent: z.enum(["0", "1", "2"]).describe("0: editor, 1: admin, 2: Live Chat Agent"),
+                botsifyChatBotApiKey: z.string(),
+            }
+        },
+        async (args: { name: string; email: string; agent: "0" | "1" | "2"; botsifyChatBotApiKey: string }) => {
+            const { name, email, agent, botsifyChatBotApiKey } = args;
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+            try {
+                const result = await apiRequest<any>('POST', `/v1/bot/team`, {
+                    data: {
+                        name,
+                        email,
+                        agent: Number(agent),
+                    },
+                });
+                if (result.success) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: result.data ? `Team member created successfully:\n${JSON.stringify(result.data, null, 2)}` : "Team member created successfully.",
+                            },
+                        ],
+                    };
+                } else {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `Failed to create team member: ${result.error}`,
+                            },
+                        ],
+                    };
+                }
+            } catch (error) {
+                return errorResponse('creating team member', error);
+            }
+        }
+    );
+
+    /**
+     * Update a team member's name and agent by userId or email
+     */
+    server.registerTool(
+        "updateTeamMember",
+        {
+            description: `Update a team member's name and agent by user ID or email. Only the name and agent fields will be updated. Asks for confirmation before updating the member.`,
+            inputSchema: {
+                userId: z.string().optional(),
+                email: z.string().optional(),
+                name: z.string(),
+                agent: z.enum(["0", "1", "2"]).describe("0: editor, 1: admin, 2: Live Chat Agent"),
+                botsifyChatBotApiKey: z.string(),
+                confirm: z.boolean().default(false),
+            }
+        },
+        async (args: { userId?: string | undefined; email?: string | undefined; name: string; agent: "0" | "1" | "2"; botsifyChatBotApiKey: string; confirm?: boolean }) => {
+            const { userId, email, name, agent, botsifyChatBotApiKey, confirm } = args;
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+            try {
+                if (!userId && !email) return missingIdResponse();
+                const member = await lookupTeamMember(userId, email);
+                if (!member || !member.id) return notFoundResponse(userId, email);
+                if (!confirm) {
+                    return confirmationResponse(member, `Do you want to update this team member's name and agent? Please respond with \"confirm: true\" to proceed.`);
+                }
+                const data: any = { name, agent: Number(agent) };
+                const result = await apiRequest<any>('PUT', `/v1/bot/team/${member.id}`, { data });
+                if (result.success) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: result.data ? `Team member updated successfully:\n${JSON.stringify(result.data, null, 2)}` : "Team member updated successfully.",
+                            },
+                        ],
+                    };
+                } else {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `Failed to update team member: ${result.error}`,
+                            },
+                        ],
+                    };
+                }
+            } catch (error) {
+                return errorResponse('updating team member', error);
+            }
+        }
+    );
+
+    /**
+     * Delete a team member by userId or email, with confirmation
+     */
+    server.registerTool(
+        "deleteTeamMember",
+        {
+            description: `Delete a team member by user ID or email. Asks for confirmation before deleting the member.`,
+            inputSchema: {
+                userId: z.string().optional(),
+                email: z.string().optional(),
+                botsifyChatBotApiKey: z.string(),
+                confirm: z.boolean().default(false),
+            }
+        },
+        async (args: { userId?: string | undefined; email?: string | undefined; botsifyChatBotApiKey: string; confirm?: boolean }) => {
+            const { userId, email, botsifyChatBotApiKey, confirm } = args;
+            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+            try {
+                if (!userId && !email) return missingIdResponse();
+                const member = await lookupTeamMember(userId, email);
+                if (!member || !member.id) return notFoundResponse(userId, email);
+                if (!confirm) {
+                    return confirmationResponse(member, `Do you want to delete this team member? Please respond with \"confirm: true\" to proceed.`);
+                }
+                const result = await apiRequest<any>('DELETE', `/v1/bot/team/${member.id}`);
+                if (result.success) {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: result.data ? `Team member deleted successfully:\n${JSON.stringify(result.data, null, 2)}` : "Team member deleted successfully.",
+                            },
+                        ],
+                    };
+                } else {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `Failed to delete team member: ${result.error}`,
+                            },
+                        ],
+                    };
+                }
+            } catch (error) {
+                return errorResponse('deleting team member', error);
+            }
+        }
+    );
 }

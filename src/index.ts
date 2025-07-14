@@ -2,8 +2,6 @@ import 'dotenv/config';
 import express from "express";
 import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {StreamableHTTPServerTransport} from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import {z} from "zod";
-import {botSettingKeys, botSettingsTools} from "./tools/botSettingsTools.js";
 import {toolsController} from "./controllers/toolsController.js";
 import {requestContextMiddleware, setValue} from "./utils/requestContext";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -99,7 +97,7 @@ app.get('/', (req, res) => {
         }
     });
 });
-app.get("/tools", toolsController.listTools);
+app.get("/tools/list", toolsController.listTools);
 app.post("/tools/call", toolsController.callTool);
 app.get("/tools/:tool/docs", toolsController.getToolDocs);
 

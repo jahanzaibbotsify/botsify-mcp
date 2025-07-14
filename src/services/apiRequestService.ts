@@ -20,7 +20,6 @@ const axiosClient: AxiosInstance = axios.create({
  */
 axiosClient.interceptors.request.use(
     (config) => {
-      console.log('Request Config', JSON.stringify(config, null, 2));
       logger.debug(`Making request to ${config.url}`, {
         method: config.method,
         data: config.data,
