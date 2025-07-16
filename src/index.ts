@@ -104,9 +104,15 @@ app.get('/', (req, res) => {
                 "createTeamMember",
                 "updateTeamMember",
                 "deleteTeamMember",
-                // manageOfflineHoursTools
                 "getOfflineHours",
-                "setOfflineHours"
+                "setOfflineHours",
+                "clearBotData",
+                "getPersistentMenu",
+                "setPersistentMenu",
+                "createPageMessage",
+                "updatePageMessage",
+                "deletePageMessage",
+                "getAllPageMessages",
             ]
         }
     });
