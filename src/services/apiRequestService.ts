@@ -4,7 +4,7 @@ import { Logger } from '../utils/logger.js';
 import { getValue } from '../utils/requestContext.js';
 
 const config = getBotApiConfig();
-const logger = new Logger({ service: 'BotApiService' });
+const logger = new Logger({ service: 'apiRequestService' });
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: config.baseUrl,
