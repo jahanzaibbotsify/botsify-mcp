@@ -73,7 +73,6 @@ Create a `.env` file with the following variables:
 # Botsify API Configuration
 BOTSIFY_API_BASE_URL=https://dev.botsify.com/api
 BOTSIFY_API_KEY=your_api_key_here
-BOTSIFY_BOT_ID=your_bot_id_here
 
 # Server Configuration
 PORT=3000

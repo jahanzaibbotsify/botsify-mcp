@@ -195,57 +195,49 @@ export function registerBotSettingsTools(server: McpServer) {
         "updateBotGeneralSettings",
         {
             description: `
-              This tool allows clients to update the bot's general configuration settings.
-              You may update one or more of the following settings:
-              - update just those fields that user told.  
-              - botStatus (boolean): Set to \`true\` to activate the bot or \`false\` to deactivate it.
-              - email (string): Comma-separated list of email addresses to receive transcriptions and notifications (e.g. "foo@example.com,bar@example.com").
-              - inactiveUrl (string): URL to be called via webhook when the bot becomes inactive.
-              - translation (boolean): Enable (\`true\`) or disable (\`false\`) translation of messages.
-              - botsifyChatBotApiKey (string, required): Your Botsify ChatBot API Key. This is required for authentication.
-        
-              You may update any subset of these fields in a single request. If a field is omitted, it will remain unchanged.
+                "Update only the bot settings the user directly requests to update.
+                  - Do NOT include default, empty string, or false/undefined values unless the user explicitly requests them.
+                  - If an optional field is an empty string, do NOT update it.
+                  - Only send fields actually specified by the user in the request.
+
+                  Fields:
+                  - botStatus (boolean): Set true to activate, false to deactivate. (Include only if the user requested.)
+                  - email (string): Comma-separated email addresses (only if the user requested).
+                  - inactiveUrl (string): Webhook (only if the user requested).
+                  - translation (boolean): Enable/disable translation (only if the user requested).
+                  - botsifyChatBotApiKey (string, required): Always required for authentication.
+
+                  Never infer or update unspecified fields."
             `,
             inputSchema: {
-                botStatus: z.boolean().optional(),
-                email: z.string().optional(),
-                inactiveUrl: z.string().optional(),
-                translation: z.boolean().optional(),
-                botsifyChatBotApiKey: z.string(),
+                botStatus: z.boolean().optional().describe("Set true/false if user requested status update."),
+                email: z.string().optional().describe("Only send if user asked to update email."),
+                inactiveUrl: z.string().optional().describe("Only if user wants to update inactive URL."),
+                translation: z.boolean().optional().describe("Only if user wants to update translation."),
+                botsifyChatBotApiKey: z.string().describe("Required always."),
             }
         },
-        async (args: {
-            botStatus?: boolean | undefined;
-            email?: string | undefined;
-            inactiveUrl?: string | undefined;
-            messageWebhook?: string | undefined;
-            translation?: boolean | undefined;
-            botsifyChatBotApiKey: string
-        }) => {
-            const {botStatus, email, inactiveUrl, messageWebhook, translation, botsifyChatBotApiKey} = args;
+        async (args) => {
+            const { botStatus, email, inactiveUrl, translation, botsifyChatBotApiKey } = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
 
-            // Create a validated object with only the provided values
-            const validatedObject: Record<string, any> = {};
+            const updatePayload: Record<string, any> = {};
 
-            if (botStatus !== undefined) {
-                validatedObject.botStatus = botStatus ? 1 : 0;
+            if (Object.prototype.hasOwnProperty.call(args, "botStatus")) {
+                updatePayload.botStatus = botStatus ? 1 : 0;
             }
-            if (email !== undefined) {
-                validatedObject.email = email;
+            if (Object.prototype.hasOwnProperty.call(args, "email") && email && email.trim() !== "") {
+                updatePayload.email = email;
             }
-            if (inactiveUrl !== undefined) {
-                validatedObject.inactiveUrl = inactiveUrl;
+            if (Object.prototype.hasOwnProperty.call(args, "inactiveUrl") && inactiveUrl && inactiveUrl.trim() !== "") {
+                updatePayload.inactiveUrl = inactiveUrl;
             }
-            if (messageWebhook !== undefined) {
-                validatedObject.messageWebhook = messageWebhook;
-            }
-            if (translation !== undefined) {
-                validatedObject.translation = translation ? 1 : 0;
+            if (Object.prototype.hasOwnProperty.call(args, "translation")) {
+                updatePayload.translation = translation ? 1 : 0;
             }
 
             const result = await apiRequest('POST', '/v1/bot/settings/update', {
-                data: validatedObject
+                data: updatePayload
             });
 
             if (result.success) {
@@ -253,7 +245,7 @@ export function registerBotSettingsTools(server: McpServer) {
                     content: [
                         {
                             type: "text",
-                            text: `General bot settings updated successfully. Updated fields: ${Object.keys(validatedObject).join(', ')}`,
+                            text: `General bot settings updated successfully. Fields updated: ${Object.keys(updatePayload).join(', ')}`,
                         },
                     ],
                 };

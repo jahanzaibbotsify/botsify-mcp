@@ -19,9 +19,9 @@ export function registerPersistentMenuTools(server: McpServer) {
      * Get the persistent menu for the bot
      */
     server.registerTool(
-        "getPersistentMenu",
+        "getChatBotMenu",
         {
-            description: `Get the persistent menu for the bot using your Botsify ChatBot API key.`,
+            description: `Get the chatbot menu for the bot using your Botsify ChatBot API key. Output should be label and response if type is url then label and url`,
             inputSchema: {
                 botsifyChatBotApiKey: z.string(),
             }
@@ -60,9 +60,9 @@ export function registerPersistentMenuTools(server: McpServer) {
      * Set the persistent menu for the bot
      */
     server.registerTool(
-        "setPersistentMenu",
+        "setChatBotMenu",
         {
-            description: `Set the persistent menu for the bot using your Botsify ChatBot API key.\n\nThe payload should include a 'buttons' array and an 'input_field' boolean.\n\nWhen a button's type is 'postback', the 'response' field can use dynamic variables in curly braces. Allowed variables: {first_name}, {last_name}, {timezone}, {gender}, {last_user_msg}, {last_page}, {os}, {user/last_user_button}, {user/last_user_message}, {user/last_user_message_time}, {user/created_at}, {user/referrer_domain}.`,
+            description: `Set the chatbot menu for the bot using your Botsify ChatBot API key.\n\nThe payload should include a 'buttons' array and an 'input_field' boolean.\n\nWhen a button's type is 'postback', the 'response' field can use dynamic variables in curly braces. Allowed variables: {first_name}, {last_name}, {timezone}, {gender}, {last_user_msg}, {last_page}, {os}, {user/last_user_button}, {user/last_user_message}, {user/last_user_message_time}, {user/created_at}, {user/referrer_domain}.`,
             inputSchema: {
                 botsifyChatBotApiKey: z.string(),
                 buttons: z.array(z.object({

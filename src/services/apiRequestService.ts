@@ -93,6 +93,7 @@ export async function apiRequest<T = any>(
     /**
      * If the method is POST, PUT, or PATCH, include the apikey in the payload.
      */
+    console.log("apiRequest called with method:", method, "and endpoint:", endpoint, "bot api key:", getValue('botsifyChatBotApiKey'));
     let payload = options.data;
     let params = options.params || {};
     if (method.toUpperCase() === 'POST' || method.toUpperCase() === 'PUT' || method.toUpperCase() === 'PATCH') {
@@ -125,6 +126,7 @@ export async function apiRequest<T = any>(
       status: 500,
       statusText: 'Internal Server Error',
     };
+    console.log(err?.response || err)
     if (err.response) {
       errorResponse.status = err.response.status;
       errorResponse.statusText = err.response.statusText;

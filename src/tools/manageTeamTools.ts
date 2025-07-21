@@ -10,24 +10,24 @@ export function registerManageTeamTools(server: McpServer) {
     server.registerTool(
         "getTeamMembers",
         {
-            description: `Get the list of team members for the current bot. You can optionally specify the number of members per page using the perPage parameter.`,
+            description: `Fetch team members for the current bot, displaying only name, email, and role. perPage parameter is optional.`,
             inputSchema: {
                 perPage: z.number().optional(),
                 botsifyChatBotApiKey: z.string(),
             }
         },
         async (args: { perPage?: number | undefined, botsifyChatBotApiKey: string }) => {
-            const { perPage, botsifyChatBotApiKey } = args;
+            const {perPage, botsifyChatBotApiKey} = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
-            
+
             try {
                 const result = await apiRequest('GET', '/v1/bot/manage-team', {
                     params: {
-                        ...(perPage ? { per_page: perPage } : {}),
+                        ...(perPage ? {per_page: perPage} : {}),
                         client: true
                     },
                 });
-                
+
                 if (result.success) {
                     return {
                         content: [
@@ -78,7 +78,7 @@ export function registerManageTeamTools(server: McpServer) {
     function missingIdResponse() {
         return {
             content: [
-                { type: "text", text: "Please provide either a userId or an email to identify the team member." },
+                {type: "text", text: "Please provide either a userId or an email to identify the team member."},
             ],
         } as any;
     }
@@ -91,7 +91,7 @@ export function registerManageTeamTools(server: McpServer) {
     function notFoundResponse(userId?: string, email?: string) {
         return {
             content: [
-                { type: "text", text: `No team member found with ${userId ? `userId: ${userId}` : `email: ${email}`}` },
+                {type: "text", text: `No team member found with ${userId ? `userId: ${userId}` : `email: ${email}`}`},
             ],
         } as any;
     }
@@ -134,7 +134,7 @@ export function registerManageTeamTools(server: McpServer) {
     server.registerTool(
         "toggleBotAccessForTeamMember",
         {
-            description: `Finds a team member by user ID or email, then asks for your confirmation before changing their bot access. You must confirm to proceed with changing access.`,
+            description: `Finds a team member by user ID or email, then asks for your confirmation before changing their bot access. Ask user for confirm to proceed with changing access.`,
             inputSchema: {
                 userId: z.string().optional(),
                 email: z.string().optional(),
@@ -142,8 +142,13 @@ export function registerManageTeamTools(server: McpServer) {
                 confirm: z.boolean().default(false)
             }
         },
-        async (args: { userId?: string | undefined; email?: string | undefined; botsifyChatBotApiKey: string; confirm?: boolean | undefined }) => {
-            const { userId, email, botsifyChatBotApiKey, confirm } = args;
+        async (args: {
+            userId?: string | undefined;
+            email?: string | undefined;
+            botsifyChatBotApiKey: string;
+            confirm?: boolean | undefined
+        }) => {
+            const {userId, email, botsifyChatBotApiKey, confirm} = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
 
             try {
@@ -193,8 +198,13 @@ export function registerManageTeamTools(server: McpServer) {
                 confirm: z.boolean().default(false)
             }
         },
-        async (args: { userId?: string | undefined; email?: string | undefined; botsifyChatBotApiKey: string; confirm?: boolean | undefined }) => {
-            const { userId, email, botsifyChatBotApiKey, confirm } = args;
+        async (args: {
+            userId?: string | undefined;
+            email?: string | undefined;
+            botsifyChatBotApiKey: string;
+            confirm?: boolean | undefined
+        }) => {
+            const {userId, email, botsifyChatBotApiKey, confirm} = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
             try {
                 if (!userId && !email) return missingIdResponse();
@@ -244,8 +254,14 @@ export function registerManageTeamTools(server: McpServer) {
                 confirm: z.boolean().default(false)
             }
         },
-        async (args: { userId?: string | undefined; email?: string | undefined; notify: boolean; botsifyChatBotApiKey: string; confirm?: boolean | undefined }) => {
-            const { userId, email, notify, botsifyChatBotApiKey, confirm } = args;
+        async (args: {
+            userId?: string | undefined;
+            email?: string | undefined;
+            notify: boolean;
+            botsifyChatBotApiKey: string;
+            confirm?: boolean | undefined
+        }) => {
+            const {userId, email, notify, botsifyChatBotApiKey, confirm} = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
             try {
                 if (!userId && !email) return missingIdResponse();
@@ -294,7 +310,7 @@ export function registerManageTeamTools(server: McpServer) {
             }
         },
         async (args: { userId?: string | undefined; email?: string | undefined; botsifyChatBotApiKey: string }) => {
-            const { userId, email, botsifyChatBotApiKey } = args;
+            const {userId, email, botsifyChatBotApiKey} = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
             try {
                 if (!userId && !email) return missingIdResponse();
@@ -320,16 +336,19 @@ export function registerManageTeamTools(server: McpServer) {
     server.registerTool(
         "createTeamMember",
         {
-            description: `Create a new team member by specifying name, email, agent type (0: editor, 1: admin, 2: Live Chat Agent), and your Botsify ChatBot API key.`,
+            description: `
+            Create a new team member by providing their name, email, and role (must be either "editor", "admin", or "live chat agent"), along with your Botsify ChatBot API key.
+            You must explicitly specify the team member's name, email, and role. These fields cannot be left blank or generated automatically.
+            `,
             inputSchema: {
-                name: z.string(),
-                email: z.string().email(),
-                agent: z.enum(["0", "1", "2"]).describe("0: editor, 1: admin, 2: Live Chat Agent"),
-                botsifyChatBotApiKey: z.string(),
+                name: z.string().describe("The new team member's full name. Must be provided by the user."),
+                email: z.string().email().describe("The new team member's email address. Must be provided by the user."),
+                agent: z.enum(["0", "1", "2"]).describe('0: editor, 1: admin, 2: Live Chat Agent. Role to assign to the new team member. Must be one of: "editor", "admin", or "live chat agent".'),
+                botsifyChatBotApiKey: z.string().describe("Your Botsify ChatBot API key."),
             }
         },
         async (args: { name: string; email: string; agent: "0" | "1" | "2"; botsifyChatBotApiKey: string }) => {
-            const { name, email, agent, botsifyChatBotApiKey } = args;
+            const {name, email, agent, botsifyChatBotApiKey} = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
             try {
                 const result = await apiRequest<any>('POST', `/v1/bot/team`, {
@@ -380,8 +399,15 @@ export function registerManageTeamTools(server: McpServer) {
                 confirm: z.boolean().default(false),
             }
         },
-        async (args: { userId?: string | undefined; email?: string | undefined; name: string; agent: "0" | "1" | "2"; botsifyChatBotApiKey: string; confirm?: boolean }) => {
-            const { userId, email, name, agent, botsifyChatBotApiKey, confirm } = args;
+        async (args: {
+            userId?: string | undefined;
+            email?: string | undefined;
+            name: string;
+            agent: "0" | "1" | "2";
+            botsifyChatBotApiKey: string;
+            confirm?: boolean
+        }) => {
+            const {userId, email, name, agent, botsifyChatBotApiKey, confirm} = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
             try {
                 if (!userId && !email) return missingIdResponse();
@@ -390,8 +416,8 @@ export function registerManageTeamTools(server: McpServer) {
                 if (!confirm) {
                     return confirmationResponse(member, `Do you want to update this team member's name and agent? Please respond with \"confirm: true\" to proceed.`);
                 }
-                const data: any = { name, agent: Number(agent) };
-                const result = await apiRequest<any>('PUT', `/v1/bot/team/${member.id}`, { data });
+                const data: any = {name, agent: Number(agent)};
+                const result = await apiRequest<any>('PUT', `/v1/bot/team/${member.id}`, {data});
                 if (result.success) {
                     return {
                         content: [
@@ -423,16 +449,31 @@ export function registerManageTeamTools(server: McpServer) {
     server.registerTool(
         "deleteTeamMember",
         {
-            description: `Delete a team member by user ID or email. Asks for confirmation before deleting the member.`,
+            description: `
+           " Delete a team member by user ID or email. 
+            You must explicitly request confirmation from the user before deletion: ask the user if they really want to delete
+            the team member, and only continue if the user confirms. 
+            **Never set the "confirm" field automatically; it must be provided by the user with a true value.** 
+            This action cannot be undone."
+            `,
             inputSchema: {
-                userId: z.string().optional(),
-                email: z.string().optional(),
-                botsifyChatBotApiKey: z.string(),
-                confirm: z.boolean().default(false),
+                userId: z.string().optional().describe("User ID of the team member to delete (optional if email is provided)."),
+                email: z.string().optional().describe("Email of the team member to delete (optional if userId is provided)."),
+                botsifyChatBotApiKey: z.string().describe("Your Botsify ChatBot API key."),
+                confirm: z.boolean()
+                    .refine(val => val === true, {
+                        message: 'You must explicitly confirm with the user before proceeding with deletion.',
+                    })
+                    .describe('Explicit confirmation from the user is required. Only set to true if the user confirms deletion.'),
             }
         },
-        async (args: { userId?: string | undefined; email?: string | undefined; botsifyChatBotApiKey: string; confirm?: boolean }) => {
-            const { userId, email, botsifyChatBotApiKey, confirm } = args;
+        async (args: {
+            userId?: string | undefined;
+            email?: string | undefined;
+            botsifyChatBotApiKey: string;
+            confirm?: boolean
+        }) => {
+            const {userId, email, botsifyChatBotApiKey, confirm} = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
             try {
                 if (!userId && !email) return missingIdResponse();

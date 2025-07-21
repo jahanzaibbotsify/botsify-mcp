@@ -91,11 +91,9 @@ app.get('/', (req, res) => {
         version: "1.0.0",
         capabilities: {
             tools: [
-                // botSettingsTools
                 "updateBotSettings",
                 "updateBotGeneralSettings",
                 "getBotsifyChatBotApiKey",
-                // manageTeamTools
                 "getTeamMembers",
                 "toggleBotAccessForTeamMember",
                 "resendInvitationToTeamMember",

@@ -22,11 +22,18 @@ export function registerClearDataTools(server: McpServer) {
   server.registerTool(
     "clearBotData",
     {
-      description:
-        "Clear or delete all messages and user interactions up to today. This action is IRREVERSIBLE. Ask user to confirm by providing the exact text 'DELETE DATA' in the 'confirmation' field.",
+      description: `
+        PERMANENTLY erase all messages and user interactions with this bot, up to today.
+        **This operation cannot be undone.**
+        
+        The user must confirm this action by explicitly providing the text 'DELETE DATA' in the 'confirmation' field.
+        If confirmation is missing or incorrect, you must NOT clear data—inform the user and request explicit confirmation first.
+        
+        Only proceed if confirmation matches exactly 'DELETE DATA' (case sensitive).
+      `,
       inputSchema: {
         botsifyChatBotApiKey: z.string(),
-        confirmation: z.string().describe("Type 'DELETE DATA' to confirm irreversible deletion."),
+        confirmation: z.string().describe("User must type the exact text: 'DELETE DATA' to confirm irreversible deletion."),
       },
     },
     async (args: { botsifyChatBotApiKey: string; confirmation: string }) => {
@@ -77,3 +84,4 @@ export function registerClearDataTools(server: McpServer) {
     }
   );
 }
+
