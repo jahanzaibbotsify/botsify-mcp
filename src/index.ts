@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import 'dotenv/config.js';
 import express from "express";
 import cors from "cors";
 import {randomUUID} from "node:crypto";
@@ -7,8 +7,8 @@ import {StreamableHTTPServerTransport} from "@modelcontextprotocol/sdk/server/st
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {isInitializeRequest} from "@modelcontextprotocol/sdk/types.js";
 import {toolsController} from "./controllers/toolsController.js";
-import {registerAllTools} from "./tools/registry";
-import {requestContextMiddleware} from "./utils/requestContext";
+import {registerAllTools} from "./tools/registry.js";
+import {requestContextMiddleware} from "./utils/requestContext.js";
 
 const app = express();
 app.use(cors());
