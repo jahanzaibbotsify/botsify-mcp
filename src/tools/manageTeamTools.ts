@@ -460,8 +460,8 @@ export function registerManageTeamTools(server: McpServer) {
                 userId: z.string().optional().describe("User ID of the team member to delete (optional if email is provided)."),
                 email: z.string().optional().describe("Email of the team member to delete (optional if userId is provided)."),
                 botsifyChatBotApiKey: z.string().describe("Your Botsify ChatBot API key."),
-                confirm: z.boolean()
-                    .refine(val => val === true, {
+                confirm: z.boolean().default(false)
+                    .refine(val => val, {
                         message: 'You must explicitly confirm with the user before proceeding with deletion.',
                     })
                     .describe('Explicit confirmation from the user is required. Only set to true if the user confirms deletion.'),

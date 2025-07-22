@@ -126,7 +126,6 @@ export async function apiRequest<T = any>(
       status: 500,
       statusText: 'Internal Server Error',
     };
-    console.log(err?.response || err)
     if (err.response) {
       errorResponse.status = err.response.status;
       errorResponse.statusText = err.response.statusText;
