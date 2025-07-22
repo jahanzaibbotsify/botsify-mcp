@@ -9,7 +9,7 @@ import {isInitializeRequest} from "@modelcontextprotocol/sdk/types.js";
 import {toolsController} from "./controllers/toolsController.js";
 import {registerAllTools} from "./tools/registry.js";
 import {requestContextMiddleware} from "./utils/requestContext.js";
-import {botSettingKeys} from "./tools/botSettingsTools";
+import {botSettingKeys} from "./tools/botSettingsTools.js";
 
 const app = express();
 app.use(cors());
