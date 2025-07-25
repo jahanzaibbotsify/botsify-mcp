@@ -10,6 +10,7 @@ import {toolsController} from "./controllers/toolsController.js";
 import {registerAllTools} from "./tools/registry.js";
 import {requestContextMiddleware} from "./utils/requestContext.js";
 import {botSettingKeys} from "./tools/botSettingsTools.js";
+import mcpClientController from "./controllers/mcpClientController";
 
 const app = express();
 app.use(cors());
@@ -361,6 +362,7 @@ app.get('/', (req, res) => {
 app.get("/tools", toolsController.listTools);
 app.post("/tools/call", toolsController.callTool);
 app.get("/tools/:tool/docs", toolsController.getToolDocs);
+app.post("/mcp/list_actions", mcpClientController.connectToServer);
 
 // Parse command line arguments
 const argv = process.argv.slice(2);
