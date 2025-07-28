@@ -10,7 +10,7 @@ import {toolsController} from "./controllers/toolsController.js";
 import {registerAllTools} from "./tools/registry.js";
 import {requestContextMiddleware} from "./utils/requestContext.js";
 import {botSettingKeys} from "./tools/botSettingsTools.js";
-import mcpClientController from "./controllers/mcpClientController";
+import mcpClientController from "./controllers/mcpClientController.js";
 
 const app = express();
 app.use(cors());
