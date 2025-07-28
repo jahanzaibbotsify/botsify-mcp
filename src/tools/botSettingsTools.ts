@@ -24,7 +24,6 @@ export const botSettingKeys: string[] = [
     "website-chatbot-popup-message",
     "delete-conversation-confirm",
     "has_sound",
-    "website-chatbot-bot-image-url",
     "human-help-form",
     "website-chatbot-move-left",
     "website-chatbot-icon-type",
