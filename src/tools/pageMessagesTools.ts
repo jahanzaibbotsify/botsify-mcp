@@ -23,21 +23,23 @@ export function registerPageMessagesTools(server: McpServer) {
         {
             description: `Create a page message for one or more URLs. Supports text or story messages, with display options for scroll or delay.\n\n- url: Comma-separated list of URLs\n- html: Text message\n- show_message_after: 'scroll' or 'delay'\n- story: Story ID\n- timeout: If scroll, how much scroll before showing the message; if delay, how much delay (in ms)\n- type: 'message' or 'story'\n- botsifyChatBotApiKey: Your Botsify ChatBot API Key`,
             inputSchema: {
-                url: z.string().min(1).describe("Comma-separated list of URLs"),
-                html: z.string().min(1).describe("Text message to display"),
+                url: z.string().describe("Comma-separated list of URLs"),
+                html: z.string().optional().describe("Text message to display"),
                 show_message_after: z.enum(["scroll", "delay"]),
-                story: z.string().min(1).describe("Story ID"),
+                story: z.string().optional().describe("Story ID"),
                 timeout: z.number().describe("If scroll, how much scroll before showing the message; if delay, how much delay (in ms)"),
                 type: z.enum(["message", "story"]),
                 botsifyChatBotApiKey: z.string(),
             }
         },
-        async (args: { url: string; html: string; show_message_after: "scroll" | "delay"; story: string; timeout: number; type: "message" | "story"; botsifyChatBotApiKey: string }) => {
+        async (args: { url: string; html?: string|undefined; show_message_after: "scroll" | "delay"; story?: string|undefined; timeout: number; type: "message" | "story"; botsifyChatBotApiKey: string }) => {
             const { url, html, show_message_after, story, timeout, type, botsifyChatBotApiKey } = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
             try {
                 const payload = { url, html, show_message_after, story, timeout, type };
+                console.log(payload)
                 const result = await apiRequest<any>('POST', '/v1/page-message/store', { data: payload });
+                console.log(result)
                 if (result.success) {
                     return {
                         content: [
@@ -71,18 +73,18 @@ export function registerPageMessagesTools(server: McpServer) {
         {
             description: `Update a page message by ID. Asks for confirmation before updating.\n\n- id: Page message ID\n- url: Comma-separated list of URLs\n- html: Text message\n- show_message_after: 'scroll' or 'delay'\n- story: Story ID\n- timeout: If scroll, how much scroll before showing the message; if delay, how much delay (in ms)\n- type: 'message' or 'story'\n- botsifyChatBotApiKey: Your Botsify ChatBot API Key\n- confirm: Set to true to confirm update`,
             inputSchema: {
-                id: z.string().min(1).describe("Page message ID"),
-                url: z.string().min(1).describe("Comma-separated list of URLs"),
-                html: z.string().min(1).describe("Text message to display"),
+                id: z.string().describe("Page message ID"),
+                url: z.string().describe("Comma-separated list of URLs"),
+                html: z.string().optional().describe("Text message to display"),
                 show_message_after: z.enum(["scroll", "delay"]),
-                story: z.string().min(1).describe("Story ID"),
+                story: z.string().optional().describe("Story ID"),
                 timeout: z.number().describe("If scroll, how much scroll before showing the message; if delay, how much delay (in ms)"),
                 type: z.enum(["message", "story"]),
                 botsifyChatBotApiKey: z.string(),
                 confirm: z.boolean().default(false),
             }
         },
-        async (args: { id: string; url: string; html: string; show_message_after: "scroll" | "delay"; story: string; timeout: number; type: "message" | "story"; botsifyChatBotApiKey: string; confirm?: boolean }) => {
+        async (args: { id: string; url: string; html?: string|undefined; show_message_after: "scroll" | "delay"; story?: string|undefined; timeout: number; type: "message" | "story"; botsifyChatBotApiKey: string; confirm?: boolean }) => {
             const { id, url, html, show_message_after, story, timeout, type, botsifyChatBotApiKey, confirm } = args;
             setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
             if (!confirm) {
