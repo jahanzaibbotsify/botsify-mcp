@@ -1,18 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { setValue } from "../utils/requestContext.js";
 import { apiRequest } from "../services/apiRequestService.js";
-
-function errorResponse(action: string, error: unknown) {
-  return {
-    content: [
-      {
-        type: "text",
-        text: `Error ${action}: ${error instanceof Error ? error.message : "Unknown error"}`,
-      },
-    ],
-  } as any;
-}
+import {clearBotDataInstructions} from "../utils/toolDefinations";
+import {formatTextResponse} from "../utils/formattedResponseHandler";
 
 export function registerClearDataTools(server: McpServer) {
   /**
@@ -22,34 +12,16 @@ export function registerClearDataTools(server: McpServer) {
   server.registerTool(
     "clearBotData",
     {
-      description: `
-        PERMANENTLY erase all messages and user interactions with this bot, up to today.
-        **This operation cannot be undone.**
-        
-        The user must confirm this action by explicitly providing the text 'DELETE DATA' in the 'confirmation' field.
-        If confirmation is missing or incorrect, you must NOT clear data—inform the user and request explicit confirmation first.
-        
-        Only proceed if confirmation matches exactly 'DELETE DATA' (case sensitive).
-      `,
+      description: clearBotDataInstructions,
       inputSchema: {
-        botsifyChatBotApiKey: z.string(),
-        confirmation: z.string().describe("User must type the exact text: 'DELETE DATA' to confirm irreversible deletion."),
+        confirmation: z.string().optional().describe("User must type the exact text: 'DELETE DATA' to confirm irreversible deletion."),
       },
     },
-    async (args: { botsifyChatBotApiKey: string; confirmation: string }) => {
-      const { botsifyChatBotApiKey, confirmation } = args;
-      setValue("botsifyChatBotApiKey", botsifyChatBotApiKey);
+    async (args: { confirmation?: string|undefined }) => {
+      const { confirmation } = args;
 
       if (confirmation !== "DELETE DATA") {
-        return {
-          content: [
-            {
-              type: "text",
-              text:
-                "Are you sure you want to delete ALL messages and user interactions up to today? This action is IRREVERSIBLE.\n\nTo confirm, please type 'DELETE DATA' in the 'confirmation' field.",
-            },
-          ],
-        };
+        return formatTextResponse("Are you sure you want to delete ALL messages and user interactions up to today? This action is IRREVERSIBLE.\n\nTo confirm, please type 'DELETE DATA' in the 'confirmation' field.");
       }
 
       try {
@@ -59,27 +31,12 @@ export function registerClearDataTools(server: McpServer) {
           },
         });
         if (result.success) {
-          return {
-            content: [
-              {
-                type: "text",
-                text:
-                  "All messages and user interactions have been deleted up to today. This action cannot be undone.",
-              },
-            ],
-          };
+          return formatTextResponse("All messages and user interactions have been deleted up to today. This action cannot be undone.");
         } else {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Failed to delete data: ${result.error}`,
-              },
-            ],
-          };
+          return formatTextResponse(`Failed to delete data: ${result.error}`);
         }
       } catch (error) {
-        return errorResponse("deleting data", error);
+        return formatTextResponse(`Error deleting chatbot data: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     }
   );

@@ -3,8 +3,10 @@ import {ValidationError} from '../types/index.js';
 import {Logger} from '../utils/logger.js';
 import {UpdateBotSettingsSchema} from '../types/index.js';
 import {apiRequest} from "../services/apiRequestService.js";
-import {setValue} from "../utils/requestContext.js";
 import type {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
+import {updateBotGeneralSettingInstructions} from "../utils/toolDefinations";
+import {getValue} from "../utils/requestContext";
+import {formatTextResponse} from "../utils/formattedResponseHandler";
 
 /**
  * List of valid advance bot setting keys.
@@ -169,21 +171,12 @@ export function registerBotSettingsTools(server: McpServer) {
             description: `This tool allows clients to update the bot’s configuration settings dynamically by specifying a valid key and its corresponding value. To ensure proper functionality, the key must match one of the accepted bot setting keys. Valid keys include: ${botSettingKeys.join(", ")}.`,
             inputSchema: {
                 key: z.string(),
-                value: z.string(),
-                botsifyChatBotApiKey: z.string(),
+                value: z.string()
             }
         },
-        async ({key, value, botsifyChatBotApiKey}: { key: string; value: string, botsifyChatBotApiKey: string }) => {
-            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+        async ({key, value}: { key: string; value: string }) => {
             const result = await botSettingsTools.updateBotSettings({key, value});
-            return {
-                content: [
-                    {
-                        type: "text",
-                        text: result.message + (result.data ? `\n${JSON.stringify(result.data)}` : ""),
-                    },
-                ],
-            };
+            return formatTextResponse(result.message + (result.data ? `\n${JSON.stringify(result.data)}` : ""));
         }
     );
 
@@ -193,32 +186,16 @@ export function registerBotSettingsTools(server: McpServer) {
     server.registerTool(
         "updateBotGeneralSettings",
         {
-            description: `
-                "Update only the bot settings the user directly requests to update.
-                  - Do NOT include default, empty string, or false/undefined values unless the user explicitly requests them.
-                  - If an optional field is an empty string, do NOT update it.
-                  - Only send fields actually specified by the user in the request.
-
-                  Fields:
-                  - botStatus (boolean): Set true to activate, false to deactivate. (Include only if the user requested.)
-                  - email (string): Comma-separated email addresses (only if the user requested).
-                  - inactiveUrl (string): Webhook (only if the user requested).
-                  - translation (boolean): Enable/disable translation (only if the user requested).
-                  - botsifyChatBotApiKey (string, required): Always required for authentication.
-
-                  Never infer or update unspecified fields."
-            `,
+            description: updateBotGeneralSettingInstructions,
             inputSchema: {
-                botStatus: z.boolean().optional().describe("Set true/false if user requested status update."),
-                email: z.string().optional().describe("Only send if user asked to update email."),
-                inactiveUrl: z.string().optional().describe("Only if user wants to update inactive URL."),
-                translation: z.boolean().optional().describe("Only if user wants to update translation."),
-                botsifyChatBotApiKey: z.string().describe("Required always."),
+                botStatus: z.boolean().optional().describe("Set true/false only if user explicitly requested status update."),
+                email: z.string().optional().describe("Comma-separated valid email addresses, only if user requested update. Must match email regex."),
+                inactiveUrl: z.string().optional().describe("Valid HTTPS webhook URL, only if user requested update."),
+                translation: z.boolean().optional().describe("Enable/disable translation, only if user requested update.")
             }
         },
         async (args) => {
-            const { botStatus, email, inactiveUrl, translation, botsifyChatBotApiKey } = args;
-            setValue('botsifyChatBotApiKey', botsifyChatBotApiKey);
+            const { botStatus, email, inactiveUrl, translation } = args;
 
             const updatePayload: Record<string, any> = {};
 
@@ -240,23 +217,9 @@ export function registerBotSettingsTools(server: McpServer) {
             });
 
             if (result.success) {
-                return {
-                    content: [
-                        {
-                            type: "text",
-                            text: `General bot settings updated successfully. Fields updated: ${Object.keys(updatePayload).join(', ')}`,
-                        },
-                    ],
-                };
+                return formatTextResponse(`General bot settings updated successfully. Fields updated: ${Object.keys(updatePayload).join(', ')}`);
             } else {
-                return {
-                    content: [
-                        {
-                            type: "text",
-                            text: `Failed to update general bot settings: ${result.error}`,
-                        },
-                    ],
-                };
+                return formatTextResponse(`Failed to update general bot settings: ${result.error}`);
             }
         }
     );
@@ -268,19 +231,9 @@ export function registerBotSettingsTools(server: McpServer) {
         "getBotsifyChatBotApiKey",
         {
             description: `Retrieves the currently configured Botsify ChatBot API key from the request context. This API key is required to authenticate and authorize communication between your application and the Botsify ChatBot platform. Handle this key securely and never expose it in client-side or public channels.`,
-            inputSchema: {
-                botsifyChatBotApiKey: z.string(),
-            }
         },
-        async ({botsifyChatBotApiKey}: { botsifyChatBotApiKey: string }) => {
-            return {
-                content: [
-                    {
-                        type: "text",
-                        text: `Your Botsify ChatBot API Key is ${botsifyChatBotApiKey}`,
-                    },
-                ],
-            };
+        async () => {
+            return formatTextResponse(`Your Botsify ChatBot API Key is ${getValue('botsifyChatBotApiKey')}`);
         }
     );
 }
