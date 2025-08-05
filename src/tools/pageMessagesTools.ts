@@ -1,8 +1,8 @@
 import type {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
 import {apiRequest} from "../services/apiRequestService.js";
-import {formatTextResponse} from "../utils/formattedResponseHandler";
-import {createPageMessageInstructions, updatePageMessageInstructions} from "../utils/toolDefinations";
+import {formatTextResponse} from "../utils/formattedResponseHandler.js";
+import {createPageMessageInstructions, updatePageMessageInstructions} from "../utils/toolDefinations.js";
 
 export function registerPageMessagesTools(server: McpServer) {
     /**

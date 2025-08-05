@@ -1,4 +1,4 @@
-import {botSettingKeys} from "../tools/botSettingsTools";
+import {botSettingKeys} from "../tools/botSettingsTools.js";
 
 export const instructions: string = `
 Welcome to the Botsify Model Context Protocol (MCP) server. This interface provides secure, granular, and scalable access to administrative functions for managing Botsify chatbot (also referred to as "Agent") assets, configurations, team resources, and analytics. The terms "Agent" and "Chatbot" are interchangeable and refer to the same entity throughout this guide. Each API tool serves specific intents with strict input validation, authentication, and confirmation protocols. Instructions must be followed precisely by all LLM agents and operators.

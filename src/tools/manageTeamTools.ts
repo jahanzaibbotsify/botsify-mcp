@@ -1,12 +1,12 @@
 import type {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
 import {apiRequest} from "../services/apiRequestService.js";
-import {formatTextResponse} from "../utils/formattedResponseHandler";
+import {formatTextResponse} from "../utils/formattedResponseHandler.js";
 import {
     createTeamMemberInstructions,
     deleteTeamMemberInstructions,
     updateTeamMemberInstructions
-} from "../utils/toolDefinations";
+} from "../utils/toolDefinations.js";
 
 export function registerManageTeamTools(server: McpServer) {
     /**

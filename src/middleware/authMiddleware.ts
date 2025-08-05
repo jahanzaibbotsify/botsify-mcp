@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import {setValue} from "../utils/requestContext";
+import {setValue} from "../utils/requestContext.js";
 
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization || req.headers.authorization;

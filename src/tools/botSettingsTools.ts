@@ -4,9 +4,9 @@ import {Logger} from '../utils/logger.js';
 import {UpdateBotSettingsSchema} from '../types/index.js';
 import {apiRequest} from "../services/apiRequestService.js";
 import type {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
-import {updateBotGeneralSettingInstructions} from "../utils/toolDefinations";
-import {getValue} from "../utils/requestContext";
-import {formatTextResponse} from "../utils/formattedResponseHandler";
+import {updateBotGeneralSettingInstructions} from "../utils/toolDefinations.js";
+import {getValue} from "../utils/requestContext.js";
+import {formatTextResponse} from "../utils/formattedResponseHandler.js";
 
 /**
  * List of valid advance bot setting keys.

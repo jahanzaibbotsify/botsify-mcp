@@ -1,8 +1,8 @@
 import type {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
 import {apiRequest} from "../services/apiRequestService.js";
-import {formatTextResponse} from "../utils/formattedResponseHandler";
-import {createChatBotMenuInstructions} from "../utils/toolDefinations";
+import {formatTextResponse} from "../utils/formattedResponseHandler.js";
+import {createChatBotMenuInstructions} from "../utils/toolDefinations.js";
 
 export function registerPersistentMenuTools(server: McpServer) {
     /**

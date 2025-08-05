@@ -10,8 +10,8 @@ import {toolsController} from "./controllers/toolsController.js";
 import {registerAllTools} from "./tools/registry.js";
 import {requestContextMiddleware} from "./utils/requestContext.js";
 import mcpClientController from "./controllers/mcpClientController.js";
-import {instructions} from "./utils/instructions";
-import authMiddleware from "./middleware/authMiddleware";
+import {instructions} from "./utils/instructions.js";
+import authMiddleware from "./middleware/authMiddleware.js";
 
 const app = express();
 app.use(cors());
