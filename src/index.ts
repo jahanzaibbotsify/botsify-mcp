@@ -17,7 +17,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(requestContextMiddleware)
-app.use(authMiddleware)
 
 /**
  * Session store with metadata
@@ -98,7 +97,7 @@ async function getOrCreateTransport(sessionId: string | undefined) {
 /**
  * MCP post route.
  */
-app.post("/mcp", async (req, res) => {
+app.post("/mcp", authMiddleware, async (req, res) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     let transport: StreamableHTTPServerTransport;
     if (sessionId && sessions[sessionId]) {
@@ -153,12 +152,12 @@ const handleSessionRequest = async (req: express.Request, res: express.Response)
     }
 };
 
-app.get("/mcp", handleSessionRequest);
+app.get("/mcp", authMiddleware, handleSessionRequest);
 
 /**
  * Delete mcp session.
  */
-app.delete("/mcp", async (req, res) => {
+app.delete("/mcp", authMiddleware, async (req, res) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     if (sessionId && sessions[sessionId]) {
         sessions[sessionId].deleteRequested = true;
