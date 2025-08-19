@@ -1,10 +1,12 @@
 import {Client} from "@modelcontextprotocol/sdk/client/index.js";
 import {StreamableHTTPClientTransport} from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import {SSEClientTransport} from "@modelcontextprotocol/sdk/client/sse.js";
+
 import {Request, Response} from "express";
 
 class MCPClientController {
     private mcp: Client;
-    private transport: StreamableHTTPClientTransport | null;
+    private transport: StreamableHTTPClientTransport | SSEClientTransport | null;
     private tools: any[];
 
     constructor() {
@@ -28,7 +30,7 @@ class MCPClientController {
         if (!req.body) {
             return res.status(400).json({error: "Missing request body"});
         }
-        const {server_url, headers} = req.body as { server_url: string, headers?: object };
+        const {server_url, headers} = req.body as { server_url: string, headers?: Record<string, string> };
 
         if (!server_url) {
             return res.status(400).json({error: "Missing server_url parameter"});
@@ -36,14 +38,21 @@ class MCPClientController {
 
         try {
             const url = new URL(server_url);
-            this.transport = new StreamableHTTPClientTransport(url, {
-                requestInit: {
-                    // @ts-ignore
-                    headers: headers || {}
-                }
-            });
-            // @ts-ignore
-            await this.mcp.connect(this.transport);
+            if (server_url.includes('/sse')) {
+                this.transport = new SSEClientTransport(url, {
+                    requestInit: {
+                        headers: (headers || {}) as HeadersInit
+                    }
+                });
+            } else {
+                this.transport = new StreamableHTTPClientTransport(url, {
+                    requestInit: {
+                        headers: (headers || {}) as HeadersInit
+                    }
+                });
+            }
+            await this.mcp.connect(this.transport as unknown as any);
+
             this.setUpTransport();
 
             const toolsResult = await this.mcp.listTools();
@@ -53,13 +62,11 @@ class MCPClientController {
                 input_schema: tool.inputSchema,
             }));
 
-            console.log("Connected to server with tools:", this.tools.map(({name}) => name));
             return res.json({message: "Connected successfully", tools: this.tools});
         } catch (error) {
-
             console.log("Failed to connect to MCP server: ", error);
-            // @ts-ignore
-            return res.status(500).json({error: error?.message || "Failed to connect to MCP server"});
+            const message = error instanceof Error ? error.message : "Failed to connect to MCP server";
+            return res.status(500).json({error: message});
         }
     }
 
@@ -71,12 +78,17 @@ class MCPClientController {
             if (this.transport === null) {
                 return;
             }
-            this.transport.onclose = async () => {
+            const transportWithHandlers = this.transport as unknown as {
+                onclose?: (() => void) | null;
+                onerror?: ((error: unknown) => void) | null;
+            };
+
+            transportWithHandlers.onclose = async () => {
                 console.log("SSE transport closed.");
                 await this.cleanup();
             };
 
-            this.transport.onerror = async (error) => {
+            transportWithHandlers.onerror = async (error) => {
                 console.log("SSE transport error: ", error);
                 await this.cleanup();
             };
