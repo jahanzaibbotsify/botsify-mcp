@@ -180,6 +180,8 @@ export function registerBotSettingsTools(server: McpServer) {
             - **bool**: only 0 or 1 (false or true). 
             - **color**: hex color codes (e.g. #FF0000). 
             - **url**: must be a valid URL.
+            **confirmation**: Before applying changes, always confirm with the user by restating the key and value to be updated. For example:
+            "You are about to change website-chatbot-primary-color to #FF0000. Do you want to proceed?"
             
             Valid keys include: ${botSettingKeys.map(k => `${k.key} (${k.type}${k.range ? `, ${k.range}` : `, ${k.description}`})`).join(", ")}.`,
             inputSchema: {
