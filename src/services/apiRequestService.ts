@@ -8,7 +8,6 @@ const logger = new Logger({ service: 'apiRequestService' });
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: config.baseUrl,
-  timeout: config.timeout || 60000,
   headers: {
     'Content-Type': 'application/json',
     ...(config.authKey && { Authorization: `Bearer ${config.authKey}` }),
