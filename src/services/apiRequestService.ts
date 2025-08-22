@@ -10,7 +10,6 @@ const axiosClient: AxiosInstance = axios.create({
   baseURL: config.baseUrl,
   headers: {
     'Content-Type': 'application/json',
-    ...(config.authKey && { Authorization: `Bearer ${config.authKey}` }),
   },
 });
 
@@ -108,13 +107,15 @@ export async function apiRequest<T = any>(
       method,
       data: payload,
       params: params,
-      ...(options.headers && { headers: options.headers }),
+      headers: {
+        ...(options.headers ? options.headers : {}),
+        Authorization: 'Bearer ' + getValue('accessToken'),
+      },
     };
 
     logger.info(`Making API ${method!.toUpperCase()} request to ${endpoint}`);
     const response = await axiosClient.request<T>(axiosConfig);
 
-    console.log(response)
     return {
       success: true,
       data: response.data,
